@@ -1,0 +1,89 @@
+{
+  "name": "aero-bridge",
+  "displayName": "Aero Bridge",
+  "description": "Local WebSocket bridge connecting Aero voice assistant to VS Code",
+  "version": "0.0.1",
+  "publisher": "devang",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "aero",
+    "voice",
+    "bridge",
+    "websocket",
+    "assistant"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aero-bridge.startServer",
+        "title": "Aero Bridge: Start WebSocket Server",
+        "category": "Aero"
+      },
+      {
+        "command": "aero-bridge.stopServer",
+        "title": "Aero Bridge: Stop WebSocket Server",
+        "category": "Aero"
+      },
+      {
+        "command": "aero-bridge.restartServer",
+        "title": "Aero Bridge: Restart WebSocket Server",
+        "category": "Aero"
+      },
+      {
+        "command": "aero-bridge.status",
+        "title": "Aero Bridge: Show Status",
+        "category": "Aero"
+      }
+    ],
+    "configuration": {
+      "title": "Aero Bridge",
+      "properties": {
+        "aeroBridge.port": {
+          "type": "number",
+          "default": 8765,
+          "description": "The port where Aero WebSocket server listens (default: 8765)."
+        },
+        "aeroBridge.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start the WebSocket server when VS Code activates."
+        },
+        "aeroBridge.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show brief notifications when Aero actions are executed."
+        },
+        "aeroBridge.customActionMap": {
+          "type": "object",
+          "default": {},
+          "description": "Custom action-to-command mappings. Example: { \"my_action\": \"workbench.action.files.save\" }"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.80.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.4.5"
+  }
+}
+
