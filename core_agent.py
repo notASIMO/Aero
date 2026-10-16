@@ -2,6 +2,7 @@
 import sys
 import time
 import json
+import queue
 import ctypes
 import asyncio
 import warnings
@@ -42,15 +43,7 @@ WAKE_WORDS = ["aero", "arrow", "asimo", "hey aero", "ok aero", "jarvis"]
 WAKE_HOTKEY = "alt+space"
 ACTIVE_WINDOW_SECONDS = 20
 
-# Audio Specs
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-SEND_SAMPLE_RATE = 16000
-RECEIVE_SAMPLE_RATE = 24000
-CHUNK_SIZE = 512
-
 client = genai.Client(api_key=GEMINI_API_KEY)
-live_client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1alpha"})
 recognizer = sr.Recognizer()
 recognizer.dynamic_energy_threshold = True
 pygame.mixer.init()
@@ -60,8 +53,7 @@ def discover_models():
     available = []
     try:
         for m in client.models.list():
-            name = m.name.replace("models/", "")
-            available.append(name)
+            available.append(m.name.replace("models/", ""))
     except Exception:
         pass
 
@@ -72,22 +64,17 @@ def discover_models():
     pro_candidates = [
         "gemini-2.5-pro", "gemini-pro-latest", "gemini-2.0-pro-exp"
     ]
-    live_candidates = [
-        "gemini-2.0-flash-exp", "gemini-2.0-flash-live-001",
-        "gemini-2.5-flash-native-audio-preview-09-2025"
-    ]
 
-    flash_Pool = [m for m in flash_candidates if m in available] or flash_candidates
-    pro_Pool = [m for m in pro_candidates if m in available] or pro_candidates
-    live_Pool = [m for m in live_candidates if m in available] or live_candidates
-    return flash_Pool, pro_Pool, live_Pool
+    flash_pool = [m for m in flash_candidates if m in available] or flash_candidates
+    pro_pool = [m for m in pro_candidates if m in available] or pro_candidates
+    return flash_pool, pro_pool
 
-FLASH_MODELS, PRO_MODELS, LIVE_MODELS = discover_models()
+FLASH_MODELS, PRO_MODELS = discover_models()
 print(f"✅ Auto-Discovered Flash Models: {FLASH_MODELS[:2]}")
 print(f"✅ Auto-Discovered Pro Models:   {PRO_MODELS[:2]}")
 
 # ==========================================
-# 1. GOOGLE-ASSISTANT FLOATING HUD OVERLAY
+# 1. THREAD-SAFE GOOGLE-ASSISTANT HUD OVERLAY
 # ==========================================
 class AeroHUD:
     def __init__(self):
@@ -96,6 +83,7 @@ class AeroHUD:
         self.pill = None
         self.status_label = None
         self.sub_label = None
+        self.ui_queue = queue.Queue()
         self.approval_result = None
         self.approval_event = threading.Event()
         self.thread = threading.Thread(target=self._run_tk, daemon=True)
@@ -133,16 +121,25 @@ class AeroHUD:
             fg="#8AB4F8", bg="#101218", font=("Segoe UI", 9)
         )
         self.sub_label.place(relx=0.5, rely=0.68, anchor="center")
+
+        # Poll the thread-safe queue exclusively from inside the Tk mainloop thread
+        self.root.after(40, self._poll_queue)
         self.root.mainloop()
 
+    def _poll_queue(self):
+        try:
+            while not self.ui_queue.empty():
+                title, subtitle, color = self.ui_queue.get_nowait()
+                self.canvas.itemconfig(self.pill, outline=color)
+                self.status_label.config(text=str(title)[:58])
+                self.sub_label.config(text=str(subtitle)[:80])
+        except Exception:
+            pass
+        if self.root:
+            self.root.after(40, self._poll_queue)
+
     def update(self, title, subtitle="", color="#00E5FF"):
-        if not self.root:
-            return
-        def _do():
-            self.canvas.itemconfig(self.pill, outline=color)
-            self.status_label.config(text=str(title)[:58])
-            self.sub_label.config(text=str(subtitle)[:80])
-        self.root.after(0, _do)
+        self.ui_queue.put((title, subtitle, color))
 
     def ask_approval(self, command_str):
         """Interactive Y/N approval gate on the floating HUD."""
@@ -171,12 +168,6 @@ def capture_screen_pil():
         img = Image.frombytes("RGB", raw.size, raw.bgra, "raw", "BGRX")
         img.thumbnail((1280, 720))
         return img
-
-def capture_screen_bytes():
-    img = capture_screen_pil()
-    buf = BytesIO()
-    img.save(buf, format="JPEG", quality=75)
-    return buf.getvalue()
 
 def focus_window_by_title(keyword: str) -> bool:
     target = keyword.lower().strip()
@@ -212,10 +203,7 @@ def execute_terminal_command(command: str, require_approval: bool = True) -> str
         return f"Command failed: {e}"
 
 def delegate_to_vscode_agent(agent_name: str, task_prompt: str, project_path: str = "") -> str:
-    """
-    Controls VS Code Antigravity or Codex directly without needing a custom extension.
-    Opens the project, focuses VS Code, opens the agent chat input, and submits the prompt.
-    """
+    """Focuses VS Code, opens Antigravity or Codex chat panel, and submits the task."""
     print(f"🛠️ [VS Code {agent_name}]: {task_prompt}")
     hud.update(f"💻 Routing to VS Code ({agent_name})...", task_prompt, "#00E676")
 
@@ -229,10 +217,8 @@ def delegate_to_vscode_agent(agent_name: str, task_prompt: str, project_path: st
     focus_window_by_title("Visual Studio Code")
     time.sleep(0.5)
 
-    # Copy task prompt to clipboard
     pyperclip.copy(task_prompt)
 
-    # Open VS Code AI Chat / Antigravity / Command Palette
     if "codex" in agent_name.lower():
         pyautogui.hotkey("ctrl", "shift", "p")
         time.sleep(0.4)
@@ -241,7 +227,6 @@ def delegate_to_vscode_agent(agent_name: str, task_prompt: str, project_path: st
         pyautogui.press("enter")
         time.sleep(0.6)
     else:
-        # Focus Antigravity / Secondary Sidebar Chat in VS Code
         pyautogui.hotkey("ctrl", "shift", "i")
         time.sleep(0.6)
 
@@ -251,7 +236,7 @@ def delegate_to_vscode_agent(agent_name: str, task_prompt: str, project_path: st
     return f"Focused VS Code and dispatched task to {agent_name}: '{task_prompt}'"
 
 def deep_think_with_gemini_pro(complex_task: str) -> str:
-    """Uses Gemini Pro with Extended Thinking for heavy architecture, coding, or debugging tasks."""
+    """Uses Gemini Pro for heavy architecture, coding, or debugging tasks."""
     hud.update("🧠 Gemini Pro Extended Thinking...", complex_task, "#D500F9")
     for model_name in PRO_MODELS + FLASH_MODELS:
         try:
@@ -267,12 +252,11 @@ def deep_think_with_gemini_pro(complex_task: str) -> str:
 def delegate_to_web_llm(provider: str, prompt: str) -> str:
     """
     Opens Claude or ChatGPT in Brave browser, pastes the task, checks via Screen Vision
-    if the free tier limit is reached, and if rate-limited, automatically extracts context
-    and finishes the task using Gemini Pro!
+    if the free tier limit is reached, and automatically hands off to Gemini Pro if limited.
     """
     prov = provider.lower()
     url = "https://claude.ai/new" if "claude" in prov else "https://chatgpt.com/"
-    hud.update(f"🌐 Opening {provider.title()} in Brave...", prompt, "#FF9100")
+    hud.update(f"🌐 Opening {provider.title()} in Browser...", prompt, "#FF9100")
 
     webbrowser.open(url)
     time.sleep(4.5)
@@ -285,7 +269,6 @@ def delegate_to_web_llm(provider: str, prompt: str) -> str:
     hud.update(f"⏳ Monitoring {provider.title()} for Rate Limits...", "Inspecting browser state", "#FF9100")
     time.sleep(5.0)
 
-    # Take a screenshot to check if Claude/ChatGPT hit a free-tier usage limit
     screen_img = capture_screen_pil()
     check_prompt = (
         f"Look at this screenshot of {provider}. Did it hit a usage limit / rate limit / upgrade wall? "
@@ -313,15 +296,11 @@ def delegate_to_web_llm(provider: str, prompt: str) -> str:
     return f"Submitted task to {provider.title()} in your browser and verified no rate limit was hit."
 
 def open_or_control_spotify(song_query: str = "") -> str:
-    """
-    Finds if Spotify (desktop app or Brave tab) is already open across desktops, focuses it,
-    and either asks which song to play or searches and plays the requested song immediately.
-    """
+    """Finds open Spotify window/tab across desktops, focuses it, and plays requested track or asks."""
     hud.update("🎵 Locating Spotify...", song_query or "Focusing window", "#1DB954")
 
     found = focus_window_by_title("Spotify")
     if not found:
-        # Check if Brave is open, or launch Spotify web in Brave
         if focus_window_by_title("Brave"):
             webbrowser.open("https://open.spotify.com")
         else:
@@ -378,7 +357,6 @@ def navigate_desktop_and_ui(action: str, value: str = "") -> str:
     elif action == "volume_down":
         for _ in range(5): pyautogui.press("volumedown")
     elif action == "vision_click":
-        # Use Gemini Vision to locate coordinates of any element on screen and click it
         img = capture_screen_pil()
         sw, sh = pyautogui.size()
         prompt = (
@@ -414,12 +392,12 @@ def inspect_screen_with_vision(question: str) -> str:
     return "I couldn't inspect the screen right now."
 
 # ==========================================
-# 3. FAST VOICE & BARGE-IN ENGINE (ZERO-FAIL)
+# 3. FAST VOICE & BARGE-IN ENGINE
 # ==========================================
 conversation_history = []
 
 async def speak_with_barge_in(text: str):
-    """High-speed neural TTS with instant Spacebar or voice interruption."""
+    """High-speed neural TTS with instant Spacebar interruption."""
     if not text:
         return
     clean_text = text.replace("*", "").replace("#", "").replace("`", "").strip()
