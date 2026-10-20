@@ -66,7 +66,7 @@ def launch_or_focus_hud_window():
     ]
     for bp in browser_paths:
         if os.path.exists(bp):
-            subprocess.Popen([bp, f"--app={url}", "--window-size=480,760", "--window-position=1400,40"], creationflags=CREATE_NO_WINDOW)
+            subprocess.Popen([bp, f"--app={url}", f"--user-data-dir={os.path.join(BASE_DIR, 'hud_profile')}", "--window-size=470,780", "--window-position=1420,40"], creationflags=CREATE_NO_WINDOW)
             return
     webbrowser.open(url)
 
@@ -181,3 +181,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

@@ -1,12 +1,12 @@
-﻿from fastapi import FastAPI, Request
+﻿import os
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 import uvicorn
-from config import SERVER_PORT
+from config import BASE_DIR, SERVER_PORT
 from plugins.token_router import router_telemetry, set_router_mode
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+HTML_PATH = os.path.join(BASE_DIR, "templates", "index.html")
 
 app_state = {
     "agents": {
@@ -24,8 +24,9 @@ app_state = {
 }
 
 @app.get("/", response_class=HTMLResponse)
-async def get_war_room(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def get_war_room():
+    with open(HTML_PATH, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read(), status_code=200)
 
 @app.get("/state")
 async def get_state():
