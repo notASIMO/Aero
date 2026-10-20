@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aero Corp // Live War Room</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: transparent; height: 100vh; display: flex; justify-content: flex-end; align-items: flex-start; padding: 20px; overflow: hidden; }
+        .war-room {
+            width: 440px; background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+            display: flex; flex-direction: column; overflow: hidden; animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .header { background: rgba(22, 27, 34, 0.9); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .header h1 { font-family: 'Consolas', monospace; font-size: 13px; color: #00E5FF; letter-spacing: 1px; }
+        .grid { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .agent-card {
+            background: rgba(22, 27, 34, 0.6); border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .agent-name { font-family: 'Consolas', monospace; font-size: 11px; font-weight: bold; width: 85px; }
+        .agent-role { font-size: 11px; color: #9CA3AF; flex: 1; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .badge { font-family: 'Consolas', monospace; font-size: 9px; font-weight: bold; padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,0.4); }
+        .bus-section { padding: 0 12px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .bus-title { font-family: 'Consolas', monospace; font-size: 9px; color: #6B7280; letter-spacing: 0.5px; }
+        .bus-feed {
+            background: rgba(5, 7, 11, 0.85); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;
+            padding: 10px; height: 160px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 10px; color: #A7F3D0; line-height: 1.4;
+        }
+        .input-bar { padding: 12px; background: rgba(22, 27, 34, 0.9); display: flex; gap: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .input-box {
+            flex: 1; background: rgba(31, 41, 55, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
+            padding: 8px 12px; color: #FFFFFF; font-size: 12px; outline: none;
+        }
+        .input-box:focus { border-color: #00E5FF; }
+        .deploy-btn {
+            background: linear-gradient(135deg, #00E5FF 0%, #0088FF 100%); color: #000000; border: none;
+            border-radius: 6px; padding: 0 16px; font-family: 'Consolas', monospace; font-weight: bold; font-size: 11px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="war-room">
+        <div class="header">
+            <h1>⚡ AERO CORP // WAR ROOM</h1>
+            <span style="font-size: 10px; color: #00E5FF;">● LIVE</span>
+        </div>
+        <div class="grid" id="agent-grid"></div>
+        <div class="bus-section">
+            <span class="bus-title">EXECUTION BUS & COMMS</span>
+            <div class="bus-feed" id="bus-feed"></div>
+        </div>
+        <div class="input-bar">
+            <input type="text" class="input-box" id="mission-input" placeholder="Deploy mission to Aero Corp..." onkeydown="if(event.key==='Enter') deployMission()">
+            <button class="deploy-btn" onclick="deployMission()">DEPLOY</button>
+        </div>
+    </div>
+    <script>
+        const agents = {
+            "AERO": { role: "CEO & Orchestrator", color: "#00E5FF" },
+            "ATLAS": { role: "CTO (Deep Thinking)", color: "#D500F9" },
+            "NOVA": { role: "VP Eng (VS Code/Files)", color: "#00E676" },
+            "SENTINEL": { role: "QA & SecOps", color: "#FFB300" },
+            "PULSE": { role: "Research & Vision", color: "#FF6D00" },
+            "VIBE": { role: "OS & Spotify Ops", color: "#1DB954" }
+        };
+        const grid = document.getElementById('agent-grid');
+        for (let [id, meta] of Object.entries(agents)) {
+            grid.innerHTML += `
+                <div class="agent-card">
+                    <span class="agent-name" style="color: ${meta.color};">${id}</span>
+                    <span class="agent-role" id="role-${id}">${meta.role}</span>
+                    <span class="badge" id="badge-${id}" style="color: #6B7280;">IDLE</span>
+                </div>
+            `;
+        }
+        async function pollState() {
+            try {
+                let res = await fetch('/state');
+                let data = await res.json();
+                let feed = document.getElementById('bus-feed');
+                feed.innerHTML = data.logs.join('<br>');
+                feed.scrollTop = feed.scrollHeight;
+                for (let [id, st] of Object.entries(data.agents)) {
+                    document.getElementById(`badge-${id}`).innerText = st.status;
+                    document.getElementById(`badge-${id}`).style.color = st.color;
+                    document.getElementById(`role-${id}`).innerText = st.task;
+                }
+            } catch(e) {}
+        }
+        setInterval(pollState, 1000);
+        async function deployMission() {
+            let box = document.getElementById('mission-input');
+            let cmd = box.value.trim();
+            if(!cmd) return;
+            box.value = '';
+            await fetch('/deploy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({command: cmd}) });
+        }
+    </script>
+</body>
+</html>
