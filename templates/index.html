@@ -1,387 +1,63 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>AERO OS // NEURAL COMMAND DECK</title>
+    <meta charset="UTF-8"><title>AERO OS // COMMAND DECK</title>
     <style>
-        :root {
-            --bg-deep: #04070d;
-            --glass: rgba(10, 16, 28, 0.78);
-            --glass-border: rgba(0, 240, 255, 0.22);
-            --cyan: #00f0ff;
-            --purple: #c800ff;
-            --emerald: #00ff9d;
-            --amber: #ffb800;
-            --text-main: #ecfeff;
-            --text-dim: #64748b;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        body {
-            background: radial-gradient(circle at 50% 15%, #0a192f 0%, #03060c 70%);
-            color: var(--text-main);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            height: 100vh; overflow: hidden;
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 14px;
-        }
-        /* Sci-Fi Background Grid Overlay */
-        body::before {
-            content: ""; position: fixed; inset: 0; pointer-events: none;
-            background-image: 
-                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 28px 28px; z-index: 0;
-        }
-
-        .z-layer { position: relative; z-index: 2; }
-
-        /* TOP TELEMETRY & PLUGIN ROUTER BAR */
-        .top-bar {
-            display: flex; align-items: center; justify-content: space-between;
-            background: var(--glass); backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 14px;
-            padding: 10px 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-        }
-        .brand { display: flex; align-items: center; gap: 10px; }
-        .brand svg { width: 22px; height: 22px; stroke: var(--cyan); filter: drop-shadow(0 0 6px var(--cyan)); }
-        .brand-title { font-family: 'Consolas', monospace; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--cyan); }
-        .hotkey-pill {
-            font-family: 'Consolas', monospace; font-size: 10px; color: #94a3b8;
-            background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25);
-            padding: 3px 8px; border-radius: 6px;
-        }
-
-        /* CENTER JARVIS CYBER-REACTOR CORE */
-        .reactor-stage {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            margin: 6px 0; position: relative;
-        }
-        .reactor-wrap {
-            position: relative; width: 150px; height: 150px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-        #reactorCanvas { position: absolute; inset: 0; width: 150px; height: 150px; }
-        .reactor-hud-svg {
-            position: absolute; inset: 6px; width: 138px; height: 138px;
-            animation: spinSlow 18s linear infinite; pointer-events: none;
-        }
-        @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .core-mic-icon {
-            position: relative; z-index: 3; width: 32px; height: 32px;
-            stroke: var(--cyan); filter: drop-shadow(0 0 10px var(--cyan));
-            transition: transform 0.2s ease;
-        }
-        .reactor-wrap:hover .core-mic-icon { transform: scale(1.15); }
-        .aero-status-text {
-            margin-top: 6px; font-family: 'Consolas', monospace; font-size: 12px;
-            letter-spacing: 1.5px; color: var(--cyan); text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.45);
-        }
-        .aero-sub-text { font-size: 11px; color: #94a3b8; margin-top: 2px; text-align: center; max-width: 90%; }
-
-        /* TOKEN & PLUGIN ROUTER STRIP */
-        .plugin-bar {
-            display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            background: rgba(6, 11, 20, 0.85); border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 10px; padding: 7px 12px; margin-bottom: 8px;
-        }
-        .plugin-info { display: flex; align-items: center; gap: 8px; font-family: 'Consolas', monospace; font-size: 10px; }
-        .provider-badge {
-            color: var(--emerald); background: rgba(0, 255, 157, 0.1);
-            border: 1px solid rgba(0, 255, 157, 0.3); padding: 2px 7px; border-radius: 5px;
-        }
-        .saved-badge { color: var(--amber); }
-        .mode-select {
-            background: #0f172a; color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.35);
-            border-radius: 6px; padding: 3px 8px; font-family: 'Consolas', monospace; font-size: 10px; outline: none; cursor: pointer;
-        }
-
-        /* 6-AGENT FUTURISTIC BENTO SWARM GRID */
-        .swarm-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;
-        }
-        .agent-node {
-            background: var(--glass); backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 11px;
-            padding: 9px 11px; display: flex; align-items: center; gap: 10px;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative; overflow: hidden;
-        }
-        .agent-node.active-node {
-            border-color: var(--cyan);
-            box-shadow: 0 0 18px rgba(0, 240, 255, 0.18), inset 0 0 12px rgba(0, 240, 255, 0.06);
-        }
-        .node-icon {
-            width: 32px; height: 32px; border-radius: 8px;
-            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-        }
-        .node-icon svg { width: 17px; height: 17px; }
-        .node-meta { flex: 1; min-width: 0; }
-        .node-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
-        .node-name { font-family: 'Consolas', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; }
-        .node-status {
-            font-family: 'Consolas', monospace; font-size: 9px; font-weight: 700;
-            padding: 1px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.45);
-        }
-        .node-task {
-            font-size: 10px; color: #94a3b8; white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis;
-        }
-
-        /* LIVE NEURAL BUS STREAM */
-        .terminal-box {
-            background: rgba(3, 5, 10, 0.9); border: 1px solid rgba(0, 240, 255, 0.15);
-            border-radius: 11px; padding: 9px 12px; height: 115px; overflow-y: auto;
-            font-family: 'Consolas', monospace; font-size: 10px; line-height: 1.5; color: #a5f3fc;
-            margin-bottom: 8px;
-        }
-        .log-line { margin-bottom: 3px; }
-        .log-ts { color: #475569; }
-        .log-ag { color: var(--cyan); font-weight: bold; }
-
-        /* COMMAND INPUT BAR */
-        .cmd-bar {
-            display: flex; gap: 8px; background: var(--glass);
-            border: 1px solid var(--glass-border); border-radius: 12px; padding: 8px;
-        }
-        .cmd-input {
-            flex: 1; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12px; outline: none;
-        }
-        .cmd-input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
-        .cmd-btn {
-            background: linear-gradient(135deg, #00f0ff 0%, #0077ff 100%);
-            color: #020617; border: none; border-radius: 8px; padding: 0 16px;
-            font-family: 'Consolas', monospace; font-weight: 800; font-size: 11px;
-            letter-spacing: 1px; cursor: pointer; transition: transform 0.12s, box-shadow 0.2s;
-        }
-        .cmd-btn:hover { box-shadow: 0 0 16px rgba(0, 240, 255, 0.5); }
-        .cmd-btn:active { transform: scale(0.96); }
+        :root { --glass: rgba(10,16,28,0.75); --glass-border: rgba(0,240,255,0.22); --cyan: #00f0ff; --emerald: #00ff9d; --danger: #ff3b5c; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: #04070d; height: 100vh; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; transition: opacity 0.35s ease; }
+        body.transparent-mode { opacity: 0.25; } body.transparent-mode:hover { opacity: 1.0; }
+        .deck { width: 100%; height: 100%; background: var(--glass); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 14px; display: flex; flex-direction: column; padding: 12px; gap: 8px; }
+        .header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--cyan); font-family: 'Consolas', monospace; }
+        .header-right { display: flex; align-items: center; gap: 6px; }
+        .token-pill { background: rgba(0,255,157,0.12); border: 1px solid rgba(0,255,157,0.35); color: var(--emerald); padding: 3px 7px; border-radius: 6px; font-size: 9px; }
+        .off-btn { background: rgba(255,59,92,0.15); border: 1px solid var(--danger); color: var(--danger); border-radius: 6px; padding: 3px 8px; font-size: 9px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .off-btn:hover { background: var(--danger); color: #fff; }
+        .sub-bar { display: flex; justify-content: space-between; font-size: 9px; color: #64748b; font-family: 'Consolas', monospace; padding: 2px 4px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .card { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 7px 10px; }
+        .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+        .card-name { font-size: 10px; font-weight: bold; color: var(--cyan); font-family: 'Consolas', monospace; }
+        .card-status { font-size: 8px; color: var(--emerald); font-family: 'Consolas', monospace; }
+        .card-task { font-size: 9px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .feed { flex: 1; background: rgba(3,5,10,0.8); border: 1px solid rgba(0,240,255,0.12); border-radius: 8px; padding: 8px; overflow-y: auto; font-size: 9.5px; color: #a5f3fc; line-height: 1.45; font-family: 'Consolas', monospace; }
+        .input-bar { display: flex; gap: 6px; }
+        .box { flex: 1; background: rgba(15,23,42,0.9); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 7px 10px; color: #fff; font-size: 11px; outline: none; }
+        .box:focus { border-color: var(--cyan); }
+        .btn { background: var(--cyan); color: #000; border: none; border-radius: 6px; padding: 0 14px; font-weight: bold; font-size: 10px; cursor: pointer; }
     </style>
 </head>
-<body>
-    <!-- TOP HEADER -->
-    <div class="top-bar z-layer">
-        <div class="brand">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            <span class="brand-title">AERO // NEURAL OS</span>
+<body id="body" onclick="document.getElementById('body').classList.remove('transparent-mode')">
+    <div class="deck">
+        <div class="header">
+            <span>⚡ AERO // NEURAL OS</span>
+            <div class="header-right"><span class="token-pill" id="token-badge">0 GEMINI // ∞ FREE</span><button class="off-btn" onclick="fetch('/shutdown',{method:'POST'});window.close()">✕ OFF</button></div>
         </div>
-        <span class="hotkey-pill">WAKE: SHIFT + ALT + SPACE</span>
+        <div class="sub-bar"><span>WAKE: ALT+SPACE</span><span>KILL DAEMON: ALT+Q</span></div>
+        <div class="grid" id="grid"></div><div class="feed" id="feed"></div>
+        <div class="input-bar"><input type="text" class="box" id="inp" placeholder="Issue directive..." onkeydown="if(event.key==='Enter') sendCmd()"><button class="btn" onclick="sendCmd()">GO</button></div>
     </div>
-
-    <!-- CENTER REACTOR CORE (CLICK TO WAKE MIC) -->
-    <div class="reactor-stage z-layer">
-        <div class="reactor-wrap" onclick="triggerVoiceWake()" title="Click or press Shift+Alt+Space to speak">
-            <canvas id="reactorCanvas" width="150" height="150"></canvas>
-            <!-- Futuristic Rotating Reticle SVG -->
-            <svg class="reactor-hud-svg" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(0, 240, 255, 0.28)" stroke-width="1" stroke-dasharray="12 6 4 6"/>
-                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(200, 0, 255, 0.22)" stroke-width="1" stroke-dasharray="20 10"/>
-            </svg>
-            <svg class="core-mic-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" x2="12" y1="19" y2="22"></line>
-            </svg>
-        </div>
-        <div class="aero-status-text" id="aero-main-status">AERO ONLINE // STANDBY</div>
-        <div class="aero-sub-text" id="aero-sub-status">Click the Reactor Core or press Shift+Alt+Space to speak</div>
-    </div>
-
-    <!-- INFINITE TOKEN ROUTER & PLUGIN BAR -->
-    <div class="plugin-bar z-layer">
-        <div class="plugin-info">
-            <span style="color:#64748b;">ENGINE:</span>
-            <span class="provider-badge" id="provider-badge">REFLEX (0 TOKENS)</span>
-            <span class="saved-badge" id="saved-badge">⚡ 0 TOKENS SAVED</span>
-        </div>
-        <select class="mode-select" id="router-mode" onchange="changeRouterMode(this.value)">
-            <option value="AUTO">PLUGIN: AUTO FAILOVER</option>
-            <option value="POLLINATIONS_FREE">PLUGIN: POLLINATIONS FREE (0 KEY)</option>
-            <option value="GEMINI">PLUGIN: GEMINI POOL</option>
-            <option value="GROQ">PLUGIN: GROQ LPU</option>
-            <option value="OPENROUTER">PLUGIN: OPENROUTER FREE</option>
-            <option value="OLLAMA">PLUGIN: LOCAL OLLAMA</option>
-        </select>
-    </div>
-
-    <!-- 6-AGENT SWARM BENTO GRID -->
-    <div class="swarm-grid z-layer" id="swarm-grid"></div>
-
-    <!-- LIVE TELEMETRY STREAM -->
-    <div class="terminal-box z-layer" id="bus-feed"></div>
-
-    <!-- DIRECT COMMAND BAR -->
-    <div class="cmd-bar z-layer">
-        <input type="text" class="cmd-input" id="mission-input" placeholder="Issue directive (e.g. 'play Starboy on Spotify', 'check git status')..." onkeydown="if(event.key==='Enter') deployMission()">
-        <button class="cmd-btn" onclick="deployMission()">EXECUTE</button>
-    </div>
-
     <script>
-        // Futuristic Sci-Fi Vector Icons for Each Department Agent
-        const AGENTS_CONFIG = {
-            "AERO": {
-                color: "#00f0ff",
-                svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="2"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>`
-            },
-            "ATLAS": {
-                color: "#c800ff",
-                svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#c800ff" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>`
-            },
-            "NOVA": {
-                color: "#00ff9d",
-                svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#00ff9d" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
-            },
-            "SENTINEL": {
-                color: "#ffb800",
-                svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ffb800" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
-            },
-            "PULSE": {
-                color: "#ff5500",
-                svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#ff5500" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
-            },
-            "VIBE": {
-                color: "#1db954",
-                svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#1db954" stroke-width="2"><path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3"/></svg>`
-            }
-        };
-
-        const gridEl = document.getElementById("swarm-grid");
-        for (const [id, cfg] of Object.entries(AGENTS_CONFIG)) {
-            gridEl.innerHTML += `
-                <div class="agent-node" id="card-${id}">
-                    <div class="node-icon">${cfg.svg}</div>
-                    <div class="node-meta">
-                        <div class="node-top">
-                            <span class="node-name" style="color:${cfg.color}">${id}</span>
-                            <span class="node-status" id="badge-${id}" style="color:#64748b">IDLE</span>
-                        </div>
-                        <div class="node-task" id="role-${id}">Standing by</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 60FPS Animated Cyber-Reactor Canvas
-        const canvas = document.getElementById("reactorCanvas");
-        const ctx = canvas.getContext("2d");
-        let phase = 0;
-        let currentState = "ONLINE";
-
-        function drawReactor() {
-            ctx.clearRect(0, 0, 150, 150);
-            phase += 0.05;
-
-            let primaryColor = "#00f0ff";
-            let pulseAmp = 4;
-            if (currentState === "LISTENING") { primaryColor = "#00ff9d"; pulseAmp = 9; }
-            else if (currentState === "SPEAKING") { primaryColor = "#c800ff"; pulseAmp = 12; }
-            else if (currentState === "PLANNING") { primaryColor = "#ffb800"; pulseAmp = 8; }
-
-            const r = 34 + Math.sin(phase * 2) * pulseAmp;
-            const grad = ctx.createRadialGradient(75, 75, 5, 75, 75, r + 20);
-            grad.addColorStop(0, primaryColor);
-            grad.addColorStop(0.5, primaryColor + "44");
-            grad.addColorStop(1, "transparent");
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(75, 75, r + 20, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Waveform harmonic ring
-            ctx.strokeStyle = primaryColor;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let a = 0; a < Math.PI * 2; a += 0.1) {
-                const wave = Math.sin(a * 6 + phase * 3) * (pulseAmp * 0.45);
-                const rad = 32 + wave;
-                const x = 75 + Math.cos(a) * rad;
-                const y = 75 + Math.sin(a) * rad;
-                if (a === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.closePath();
-            ctx.stroke();
-
-            requestAnimationFrame(drawReactor);
-        }
-        drawReactor();
-
-        let lastLogLen = 0;
-        async function pollState() {
+        const agents = ["AERO", "ATLAS", "NOVA", "SENTINEL", "PULSE", "VIBE"];
+        const grid = document.getElementById("grid");
+        agents.forEach(ag => grid.innerHTML += `<div class="card"><div class="card-top"><span class="card-name">${ag}</span><span class="card-status" id="status-${ag}">IDLE</span></div><div class="card-task" id="task-${ag}">Standby</div></div>`);
+        async function poll() {
             try {
-                const res = await fetch("/state");
-                const data = await res.json();
-
-                // Update Reactor & Header from AERO state
-                const aero = data.agents["AERO"] || {status: "ONLINE", task: "Ready"};
-                currentState = aero.status;
-                document.getElementById("aero-main-status").innerText = `AERO // ${aero.status}`;
-                document.getElementById("aero-sub-status").innerText = aero.task;
-
-                // Update Token Router Telemetry
-                if (data.telemetry) {
-                    document.getElementById("provider-badge").innerText = data.telemetry.last_provider;
-                    document.getElementById("saved-badge").innerText = `⚡ ${data.telemetry.tokens_saved} TOKENS SAVED`;
+                let d = await (await fetch('/state')).json();
+                if(d.telemetry) document.getElementById("token-badge").innerText = `${d.telemetry.current_model.toUpperCase()} (${d.telemetry.tokens_remaining})`;
+                document.getElementById("body").classList.toggle("transparent-mode", d.active_mode === "transparent");
+                let f = document.getElementById("feed"); f.innerHTML = d.logs.join('<br>'); f.scrollTop = f.scrollHeight;
+                for(let [id, st] of Object.entries(d.agents)){
+                    let t=document.getElementById(`task-${id}`), s=document.getElementById(`status-${id}`);
+                    if(t) t.innerText = st.task; if(s){ s.innerText = st.status; s.style.color = st.color; }
                 }
-
-                // Update Agent Cards
-                for (const [id, st] of Object.entries(data.agents)) {
-                    const badge = document.getElementById(`badge-${id}`);
-                    const role = document.getElementById(`role-${id}`);
-                    const card = document.getElementById(`card-${id}`);
-                    if (badge && role) {
-                        badge.innerText = st.status;
-                        badge.style.color = st.color;
-                        role.innerText = st.task;
-                        if (st.status !== "IDLE" && st.status !== "STANDBY" && st.status !== "ONLINE" && st.status !== "DONE") {
-                            card.classList.add("active-node");
-                        } else {
-                            card.classList.remove("active-node");
-                        }
-                    }
-                }
-
-                // Update Logs
-                if (data.logs && data.logs.length !== lastLogLen) {
-                    lastLogLen = data.logs.length;
-                    const feed = document.getElementById("bus-feed");
-                    feed.innerHTML = data.logs.map(l => `<div class="log-line">${l}</div>`).join("");
-                    feed.scrollTop = feed.scrollHeight;
-                }
-            } catch (e) {}
+            }catch(e){}
         }
-        setInterval(pollState, 600);
-
-        async function deployMission() {
-            const box = document.getElementById("mission-input");
-            const cmd = box.value.trim();
-            if (!cmd) return;
-            box.value = "";
-            await fetch("/deploy", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({command: cmd})
-            });
-        }
-
-        async function triggerVoiceWake() {
-            await fetch("/wake", { method: "POST" });
-        }
-
-        async function changeRouterMode(mode) {
-            await fetch("/router_mode", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({mode: mode})
-            });
+        setInterval(poll, 600);
+        async function sendCmd() {
+            let b = document.getElementById("inp"), c = b.value.trim(); if(!c) return; b.value = "";
+            await fetch('/deploy', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({command: c})});
         }
     </script>
 </body>
 </html>
-

@@ -239,9 +239,9 @@ def process_deterministic_command(prompt: str) -> str | None:
 # ============================================================================
 # MASTER ORCHESTRATOR ENTRYPOINT (NEVER STUCKS ON PLANNING!)
 # ============================================================================
-async def orchestrate_mission(prompt: str, state_callback=None, log_callback=None, war_room_callback=None, approval_callback=None) -> str:
+async def orchestrate_mission(prompt: str, state_callback=None, log_callback=None, war_room_callback=None, approval_callback=None, mode_callback=None) -> str:
     if state_callback: state_callback("AERO", "PLANNING", prompt[:40], "#00f0ff")
-    if log_callback: log_callback("DEVANG", prompt)
+    if log_callback: log_callback("DEVANG", prompt)`n    if mode_callback: mode_callback("transparent")
 
     try:
         # 1. Try Stateful OS & Conversational Controller first (0 Latency, 0 Rate Limits)
@@ -277,3 +277,4 @@ async def orchestrate_mission(prompt: str, state_callback=None, log_callback=Non
         # Guarantee AERO never stays stuck on PLANNING!
         if state_callback:
             state_callback("AERO", "ONLINE", "Standing by", "#00f0ff")
+
