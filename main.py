@@ -86,7 +86,7 @@ def launch_or_focus_hud_window():
     webbrowser.open(url)
 
 def win32_hardware_hotkey_poller():
-    """Polls for [Shift+Alt+Space] to Wake and [Shift+Alt+Q] to Kill."""
+    """Polls for [Alt+Space] to Wake and [Shift+Alt+Q] to Kill."""
     VK_SHIFT = 0x10
     VK_MENU = 0x12
     VK_SPACE = 0x20
@@ -100,10 +100,10 @@ def win32_hardware_hotkey_poller():
             q_down     = bool(ctypes.windll.user32.GetAsyncKeyState(VK_Q) & 0x8000)
             
             # THE HARDWARE KILL SWITCH
-            if shift_down and alt_down and q_down:
+            if alt_down and q_down:
                 kill_aero_completely()
 
-            if shift_down and alt_down and space_down:
+            if alt_down and space_down:
                 now = time.time()
                 if now - last_trig > 1.2:
                     last_trig = now
@@ -187,7 +187,7 @@ async def main():
         is_awake = time.time() < active_until
 
         if is_awake:
-            set_agent_state("AERO", "LISTENING", "Listening (Shift+Alt+Space)", "#00ff9d")
+            set_agent_state("AERO", "LISTENING", "Listening (Alt+Space)", "#00ff9d")
             heard = await asyncio.to_thread(listen_mic, 2, 12)
             if wake_event.is_set() or not heard: continue
             
@@ -199,14 +199,14 @@ async def main():
                 active_until = 0
                 set_ui_mode("transparent")
                 await speak("Entering standby mode, sir.")
-                set_agent_state("AERO", "STANDBY", "Press Shift+Alt+Space to wake", "#64748b")
+                set_agent_state("AERO", "STANDBY", "Press Alt+Space to wake", "#64748b")
                 continue
 
             rep = await orchestrate_mission(heard, set_agent_state, log_bus, launch_or_focus_hud_window, None, set_ui_mode)
             await speak(rep)
             active_until = time.time() + ACTIVE_WINDOW_SECONDS
         else:
-            set_agent_state("AERO", "STANDBY", "Press Shift+Alt+Space to wake", "#00f0ff")
+            set_agent_state("AERO", "STANDBY", "Press Alt+Space to wake", "#00f0ff")
             heard = await asyncio.to_thread(listen_mic, 1.5, 4)
             if wake_event.is_set() or not heard: continue
             for ww in WAKE_WORDS:
@@ -223,3 +223,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

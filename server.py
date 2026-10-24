@@ -13,14 +13,14 @@ HTML_PATH = os.path.join(BASE_DIR, "templates", "index.html")
 
 app_state = {
     "agents": {
-        "AERO":     {"status": "ONLINE", "task": "Wake: Shift+Alt+Space | Quit: Shift+Alt+Q", "color": "#00f0ff"},
+        "AERO":     {"status": "ONLINE", "task": "Wake: Alt+Space | Quit: Alt+Q", "color": "#00f0ff"},
         "ATLAS":    {"status": "IDLE",   "task": "CTO // OmniRoute Frontier", "color": "#c800ff"},
         "NOVA":     {"status": "IDLE",   "task": "VP Eng // VS Code & Files", "color": "#00ff9d"},
         "SENTINEL": {"status": "IDLE",   "task": "SecOps // PowerShell & Git", "color": "#ffb800"},
         "PULSE":    {"status": "IDLE",   "task": "Research // Screen Vision", "color": "#ff5500"},
         "VIBE":     {"status": "IDLE",   "task": "OS Ops // Brave & Spotify", "color": "#1db954"}
     },
-    "logs": ["[SYSTEM] Aero OS Ready. Press Shift+Alt+Q anytime to shut down."],
+    "logs": ["[SYSTEM] Aero OS Ready. Press Alt+Q anytime to shut down."],
     "pending_command": None,
     "wake_requested": False,
     "shutdown_requested": False,
@@ -74,3 +74,4 @@ async def shutdown():
 
 def run_server():
     uvicorn.run(app, host="127.0.0.1", port=SERVER_PORT, log_level="error")
+
