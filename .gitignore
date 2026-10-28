@@ -1,8 +1,7 @@
 ﻿.env
 venv/
 __pycache__/
-*.log
-*.mp3
 *.pyc
-hud_profile/
-company_memory.json
+tts_*.mp3
+aero.pid
+aero_runtime.log

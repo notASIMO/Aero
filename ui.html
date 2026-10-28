@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AeroOS_v7_GlassDeck</title>
+<style>
+    :root {
+        --bg-deep: #060911;
+        --glass-panel: linear-gradient(145deg, rgba(22, 32, 58, 0.88) 0%, rgba(10, 15, 28, 0.94) 100%);
+        --glass-card: linear-gradient(155deg, rgba(30, 41, 70, 0.65) 0%, rgba(12, 18, 34, 0.85) 100%);
+        --border-top: rgba(255, 255, 255, 0.22);
+        --border-subtle: rgba(255, 255, 255, 0.10);
+        --cyan: #38bdf8;
+        --emerald: #34d399;
+        --violet: #c084fc;
+        --amber: #fbbf24;
+        --danger: #fb7185;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    html, body {
+        width: 100%; height: 100%; overflow: hidden;
+        background: var(--bg-deep); color: #f8fafc;
+    }
+
+    /* ================= STAGE 1: DYNAMIC ISLAND PILL ================= */
+    #island-view {
+        display: flex; align-items: center; justify-content: space-between;
+        width: 100%; height: 100%; padding: 0 14px;
+        background: linear-gradient(180deg, #0f172a 0%, #070b14 100%);
+        border: 1px solid var(--border-top);
+        border-radius: 24px;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 4px 20px rgba(0, 0, 0, 0.8);
+        cursor: pointer;
+    }
+    .island-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .orb-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: var(--cyan); box-shadow: 0 0 12px var(--cyan);
+        flex-shrink: 0; transition: all 0.2s ease;
+    }
+    .island-text {
+        font-family: 'Consolas', monospace; font-size: 11px; font-weight: 700;
+        color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wave-bars { display: flex; align-items: center; gap: 3px; height: 16px; margin: 0 10px; flex-shrink: 0; }
+    .bar { width: 2.5px; height: 4px; border-radius: 2px; background: var(--cyan); transition: height 0.08s ease; }
+    .island-btns { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .g-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #e2e8f0; border-radius: 9px; padding: 4px 9px;
+        font-size: 9.5px; font-family: 'Consolas', monospace; font-weight: 700;
+        white-space: nowrap; cursor: pointer; transition: all 0.15s ease;
+    }
+    .g-btn:hover { background: rgba(56, 189, 248, 0.25); border-color: var(--cyan); color: #fff; }
+    .g-btn.warn:hover { background: rgba(251, 191, 36, 0.25); border-color: var(--amber); color: var(--amber); }
+    .g-btn.kill:hover { background: rgba(251, 113, 133, 0.28); border-color: var(--danger); color: var(--danger); }
+
+    /* ================= STAGE 2: DARK OBSIDIAN GLASS COMMAND DECK ================= */
+    #warroom-view {
+        display: none; flex-direction: column; justify-content: space-between;
+        width: 100%; height: 100%; padding: 14px;
+        background:
+            radial-gradient(circle at 50% 35%, rgba(56, 189, 248, 0.15) 0%, transparent 55%),
+            radial-gradient(circle at 15% 15%, rgba(192, 132, 252, 0.12) 0%, transparent 40%),
+            linear-gradient(180deg, #0b1120 0%, #050811 100%);
+        border: 1.5px solid var(--border-top);
+        border-radius: 20px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .wr-top {
+        display: flex; align-items: center; justify-content: space-between;
+        background: var(--glass-panel);
+        border: 1px solid var(--border-subtle);
+        border-top-color: var(--border-top);
+        border-radius: 12px; padding: 8px 14px;
+        white-space: nowrap;
+    }
+    .wr-brand {
+        font-family: 'Consolas', monospace; font-size: 12px; font-weight: 800;
+        color: #f8fafc; letter-spacing: 1px; white-space: nowrap;
+    }
+    .wr-telemetry { display: flex; align-items: center; gap: 6px; font-family: 'Consolas', monospace; font-size: 9.5px; }
+    .glass-pill {
+        padding: 4px 8px; border-radius: 7px; white-space: nowrap;
+        background: rgba(52, 211, 153, 0.14); border: 1px solid rgba(52, 211, 153, 0.35); color: var(--emerald);
+    }
+
+    .wr-middle {
+        display: grid; grid-template-columns: 27% 46% 27%;
+        gap: 10px; flex: 1; margin: 10px 0; min-height: 0; align-items: stretch;
+    }
+    .agent-col { display: flex; flex-direction: column; gap: 8px; justify-content: space-between; }
+    .ag-card {
+        background: var(--glass-card);
+        border: 1px solid var(--border-subtle);
+        border-top-color: var(--border-top);
+        border-radius: 13px; padding: 10px 12px; flex: 1;
+        display: flex; flex-direction: column; justify-content: center;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 6px 16px rgba(0,0,0,0.4);
+        transition: all 0.2s ease;
+    }
+    .ag-card.active {
+        border-color: var(--cyan);
+        background: linear-gradient(145deg, rgba(56, 189, 248, 0.20) 0%, rgba(15, 23, 42, 0.90) 100%);
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+    }
+    .ag-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-family: 'Consolas', monospace; }
+    .ag-name { font-size: 10.5px; font-weight: 800; color: #fff; white-space: nowrap; }
+    .ag-state { font-size: 8.5px; padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,0.08); color: #cbd5e1; }
+    .ag-task { font-size: 9.5px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .avatar-stage {
+        position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: radial-gradient(circle at 50% 45%, rgba(56, 189, 248, 0.12) 0%, rgba(10, 15, 28, 0.92) 75%);
+        border: 1px solid var(--border-subtle);
+        border-top-color: var(--border-top);
+        border-radius: 16px; overflow: hidden; cursor: pointer;
+        box-shadow: inset 0 1px 1px rgba(255,255,255,0.18), 0 8px 24px rgba(0,0,0,0.5);
+    }
+    #nebulaCanvas { width: 100%; height: 220px; display: block; }
+    .avatar-caption { text-align: center; padding: 4px 14px 10px; width: 100%; }
+    .av-status { font-family: 'Consolas', monospace; font-size: 11px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; }
+    .av-transcript { font-size: 10.5px; color: #e2e8f0; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .wr-bottom { display: flex; flex-direction: column; gap: 8px; }
+    .log-box {
+        height: 76px;
+        background: #04070d;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px; padding: 7px 11px; overflow-y: auto;
+        font-family: 'Consolas', monospace; font-size: 10px; color: #bae6fd; line-height: 1.45;
+    }
+    .cmd-row { display: flex; gap: 7px; }
+    .cmd-inp {
+        flex: 1; background: #0b1120;
+        border: 1px solid var(--border-top);
+        border-radius: 10px; padding: 8px 12px; color: #fff; font-size: 11.5px; outline: none;
+    }
+    .cmd-inp:focus { border-color: var(--cyan); }
+    .cmd-btn {
+        background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+        border: none; color: #020617;
+        border-radius: 10px; padding: 0 18px;
+        font-family: 'Consolas', monospace; font-weight: 800; font-size: 11px; cursor: pointer;
+    }
+    .key-inp {
+        width: 150px; background: #0b1120; border: 1px solid rgba(251, 191, 36, 0.4);
+        border-radius: 10px; padding: 8px 10px; color: var(--amber);
+        font-family: 'Consolas', monospace; font-size: 10px; outline: none;
+    }
+</style>
+</head>
+<body>
+
+<div id="island-view" onclick="activateLiveMode()">
+    <div class="island-left">
+        <div class="orb-dot" id="pill-orb"></div>
+        <div class="island-text" id="pill-text">AERO // ALT+A OR SAY 'HEY AERO'</div>
+    </div>
+    <div class="wave-bars" id="pill-waves">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+    <div class="island-btns">
+        <button class="g-btn warn" onclick="enterStandby(); event.stopPropagation();" title="Standby (Alt+S)">⏸</button>
+        <button class="g-btn" onclick="setExpandedMode(true); event.stopPropagation();" title="Open Glass Command Deck">⤢ DECK</button>
+        <button class="g-btn kill" onclick="killAero(); event.stopPropagation();" title="Quit (Alt+Q)">✕</button>
+    </div>
+</div>
+
+<div id="warroom-view">
+    <div class="wr-top">
+        <span class="wr-brand">⚡ AERO // NEURAL COMMAND DECK</span>
+        <div class="wr-telemetry">
+            <span class="glass-pill" id="provider-badge">GROQ // LLAMA-3.3-70B</span>
+            <span class="glass-pill" id="latency-badge" style="color:#38bdf8; border-color:rgba(56,189,248,0.4);">110ms</span>
+            <button class="g-btn" onclick="activateLiveMode()">🎙️ LIVE (ALT+A)</button>
+            <button class="g-btn warn" onclick="enterStandby()">⏸ STANDBY (ALT+S)</button>
+            <button class="g-btn" onclick="setExpandedMode(false)">⤡ ISLAND</button>
+            <button class="g-btn kill" onclick="killAero()">✕ QUIT (ALT+Q)</button>
+        </div>
+    </div>
+
+    <div class="wr-middle">
+        <div class="agent-col">
+            <div class="ag-card" id="card-AERO">
+                <div class="ag-head"><span class="ag-name">👑 AERO (CEO)</span><span class="ag-state" id="st-AERO">STANDBY</span></div>
+                <div class="ag-task" id="tk-AERO">Wake-Word & Live Voice Router</div>
+            </div>
+            <div class="ag-card" id="card-ATLAS">
+                <div class="ag-head"><span class="ag-name">🧠 ATLAS (CTO)</span><span class="ag-state" id="st-ATLAS">IDLE</span></div>
+                <div class="ag-task" id="tk-ATLAS">Deep Reasoning & Architecture</div>
+            </div>
+            <div class="ag-card" id="card-NOVA">
+                <div class="ag-head"><span class="ag-name">💻 NOVA (VP ENG)</span><span class="ag-state" id="st-NOVA">IDLE</span></div>
+                <div class="ag-task" id="tk-NOVA">VS Code & File Synthesis</div>
+            </div>
+        </div>
+
+        <div class="avatar-stage" onclick="activateLiveMode()">
+            <canvas id="nebulaCanvas" width="380" height="220"></canvas>
+            <div class="avatar-caption">
+                <div class="av-status" id="av-status">STANDBY // PRESS ALT+A OR CLICK CORE</div>
+                <div class="av-transcript" id="av-transcript">Alt+A: Live Listen | Alt+S: Standby | Alt+Q: Quit</div>
+            </div>
+        </div>
+
+        <div class="agent-col">
+            <div class="ag-card" id="card-SENTINEL">
+                <div class="ag-head"><span class="ag-name">🛡️ SENTINEL (SECOPS)</span><span class="ag-state" id="st-SENTINEL">IDLE</span></div>
+                <div class="ag-task" id="tk-SENTINEL">PowerShell & Git Auditing</div>
+            </div>
+            <div class="ag-card" id="card-PULSE">
+                <div class="ag-head"><span class="ag-name">🌐 PULSE (DOM UIA)</span><span class="ag-state" id="st-PULSE">IDLE</span></div>
+                <div class="ag-task" id="tk-PULSE">YouTube & Live DOM Tree Clicker</div>
+            </div>
+            <div class="ag-card" id="card-VIBE">
+                <div class="ag-head"><span class="ag-name">🎛️ VIBE (OS & MEDIA)</span><span class="ag-state" id="st-VIBE">IDLE</span></div>
+                <div class="ag-task" id="tk-VIBE">Spotify, Safe Tabs & Hardware</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wr-bottom">
+        <div class="log-box" id="log-box"></div>
+        <div class="cmd-row">
+            <input type="text" class="cmd-inp" id="cmd-inp" placeholder="Ask anything or issue an OS directive..." onkeydown="if(event.key==='Enter') sendTextCmd()">
+            <button class="cmd-btn" onclick="sendTextCmd()">SEND</button>
+            <input type="password" class="key-inp" id="groq-key-inp" placeholder="Update gsk_ Key" onkeydown="if(event.key==='Enter') saveGroqKey()">
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById("nebulaCanvas");
+    const ctx = canvas.getContext("2d");
+    let avatarMode = "STANDBY";
+    const N = 700, pts = [], golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < N; i++) {
+        const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), theta = golden * i;
+        pts.push({ bx: Math.cos(theta) * r, by: y, bz: Math.sin(theta) * r });
+    }
+    let t = 0;
+    function render3D() {
+        requestAnimationFrame(render3D);
+        if (document.getElementById("warroom-view").style.display === "none") return;
+        const w = canvas.width, h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        let speed = 0.015, amp = 0.05, rgb = "56, 189, 248";
+        if (avatarMode === "LISTENING") { speed = 0.035; amp = 0.16; rgb = "52, 211, 153"; }
+        else if (avatarMode === "THINKING") { speed = 0.065; amp = 0.24; rgb = "251, 191, 36"; }
+        else if (avatarMode === "SPEAKING") { speed = 0.045; amp = 0.28; rgb = "192, 132, 252"; }
+
+        t += speed;
+        const cosY = Math.cos(t), sinY = Math.sin(t), cosX = Math.cos(t * 0.6), sinX = Math.sin(t * 0.6), R = 75;
+
+        // Ambient core glow
+        const grad = ctx.createRadialGradient(w/2, h/2, 5, w/2, h/2, R * 1.3);
+        grad.addColorStop(0, `rgba(${rgb}, 0.22)`);
+        grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        for (let i = 0; i < N; i++) {
+            const p = pts[i], wave = 1 + Math.sin(t * 5 + p.bx * 4 + p.by * 4) * amp;
+            let x = p.bx * R * wave, y = p.by * R * wave, z = p.bz * R * wave;
+            let x1 = x * cosY - z * sinY, z1 = z * cosY + x * sinY;
+            let y1 = y * cosX - z1 * sinX, z2 = z1 * cosX + y * sinX;
+            const scale = 240 / (240 + z2), sx = w / 2 + x1 * scale, sy = h / 2 + y1 * scale;
+            const alpha = Math.max(0.2, Math.min(1, (z2 + R) / (2 * R)));
+            ctx.fillStyle = `rgba(${rgb}, ${alpha.toFixed(2)})`;
+            ctx.beginPath(); ctx.arc(sx, sy, Math.max(1.1, 2.2 * scale), 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    render3D();
+
+    setInterval(() => {
+        const bars = document.querySelectorAll("#pill-waves .bar");
+        bars.forEach(b => {
+            b.style.height = (avatarMode !== "STANDBY" ? (4 + Math.floor(Math.random() * 13)) : 4) + "px";
+        });
+    }, 90);
+
+    function setExpandedMode(expand) {
+        document.getElementById("island-view").style.display = expand ? "none" : "flex";
+        document.getElementById("warroom-view").style.display = expand ? "flex" : "none";
+        if (window.pywebview && window.pywebview.api) window.pywebview.api.set_expanded(expand);
+    }
+    function activateLiveMode() {
+        if (window.pywebview && window.pywebview.api) window.pywebview.api.activate_listening();
+    }
+    function enterStandby() {
+        if (window.pywebview && window.pywebview.api) window.pywebview.api.enter_standby();
+    }
+    function sendTextCmd() {
+        const inp = document.getElementById("cmd-inp"), val = inp.value.trim();
+        if (!val) return; inp.value = "";
+        if (window.pywebview && window.pywebview.api) window.pywebview.api.submit_text(val);
+    }
+    function saveGroqKey() {
+        const inp = document.getElementById("groq-key-inp"), k = inp.value.trim();
+        if (!k) return; inp.value = ""; inp.placeholder = "✅ Key Active!";
+        if (window.pywebview && window.pywebview.api) window.pywebview.api.save_key(k);
+    }
+    function killAero() {
+        if (window.pywebview && window.pywebview.api) window.pywebview.api.kill_aero();
+    }
+
+    window.syncStateFromPython = function(s) {
+        if (typeof s.expanded === "boolean") {
+            document.getElementById("island-view").style.display = s.expanded ? "none" : "flex";
+            document.getElementById("warroom-view").style.display = s.expanded ? "flex" : "none";
+        }
+        avatarMode = s.mode || "STANDBY";
+        const colorMap = { "STANDBY": "#38bdf8", "LISTENING": "#34d399", "THINKING": "#fbbf24", "SPEAKING": "#c084fc" };
+        const col = colorMap[avatarMode] || "#38bdf8";
+
+        document.getElementById("pill-orb").style.background = col;
+        document.getElementById("pill-orb").style.boxShadow = `0 0 12px ${col}`;
+        document.getElementById("pill-text").innerText = s.pill_text || "AERO";
+        document.getElementById("av-status").innerText = s.status_title || avatarMode;
+        document.getElementById("av-status").style.color = col;
+        document.getElementById("av-transcript").innerText = s.subtitle || "";
+
+        if (s.provider) document.getElementById("provider-badge").innerText = s.provider;
+        if (s.latency_ms) document.getElementById("latency-badge").innerText = `${s.latency_ms}ms`;
+
+        if (s.agents) {
+            for (const [ag, info] of Object.entries(s.agents)) {
+                const stEl = document.getElementById(`st-${ag}`), tkEl = document.getElementById(`tk-${ag}`), cdEl = document.getElementById(`card-${ag}`);
+                if (stEl && tkEl && cdEl) {
+                    stEl.innerText = info.status; tkEl.innerText = info.task;
+                    cdEl.classList.toggle("active", ["EXECUTING", "LISTENING", "SPEAKING"].includes(info.status));
+                }
+            }
+        }
+        if (s.logs) {
+            const lb = document.getElementById("log-box");
+            lb.innerHTML = s.logs.join("<br>"); lb.scrollTop = lb.scrollHeight;
+        }
+    };
+</script>
+</body>
+</html>
